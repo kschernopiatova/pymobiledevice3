@@ -20,6 +20,17 @@ from pymobiledevice3.tunneld import TunneldRunner
 
 logger = logging.getLogger(__name__)
 
+host_address = ""
+port_address = ""
+
+
+def get_host():
+    return host_address
+
+
+def get_port():
+    return port_address
+
 
 def get_device_list() -> List[RemoteServiceDiscoveryService]:
     result = []
@@ -103,6 +114,10 @@ async def tunnel_task(
 
     async with start_tunnel(service_provider, secrets=secrets, max_idle_timeout=max_idle_timeout,
                             protocol=protocol) as tunnel_result:
+        global host_address
+        global port_address
+        host_address = tunnel_result.address
+        port_address = str(tunnel_result.port)
         logger.info('tunnel created')
         if script_mode:
             print(f'{tunnel_result.address} {tunnel_result.port}')
