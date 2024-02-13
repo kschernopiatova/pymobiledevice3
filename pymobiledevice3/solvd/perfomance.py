@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from threading import Thread
 
 from RSD import start_tunnel
@@ -72,6 +73,7 @@ class Performance:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with Sysmontap(dvt) as sysmon:
                     for process_snapshot in sysmon.iter_processes():
+                        time.sleep(1.5)
                         for process in process_snapshot:
                             self.sysmon_processes.append(process)
                             print(process)
@@ -106,6 +108,7 @@ class Performance:
                         if self.condition:
                             break
         self.energy_PID = self.create_json_data_process(self.energy_PID, pid_list)
+        self.energy_PID.pop(0)
 
     def start_collecting(self, pid_list: list):
         energy_pid_daemon = Thread(target=self.dvt_energy, name="energy", daemon=True, kwargs={"pid_list": pid_list})

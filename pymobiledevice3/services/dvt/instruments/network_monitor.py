@@ -38,6 +38,11 @@ class InterfaceDetectionEvent:
     interface_index: int
     name: str
 
+    def get_dump(self):
+        return {"InterfaceDetectionEvent":
+                               {"interface_index": self.interface_index,
+                                "name": self.name}}
+
 
 @dataclasses.dataclass
 class ConnectionDetectionEvent:
@@ -49,6 +54,15 @@ class ConnectionDetectionEvent:
     recv_buffer_used: int
     serial_number: int
     kind: int
+
+    def get_dump(self):
+        return {"ConnectionDetectionEvent":
+                               {"interface_index": self.interface_index,
+                                "pid": self.pid,
+                                "recv_buffer_size": self.recv_buffer_size,
+                                "recv_buffer_used": self.recv_buffer_used,
+                                "serial_number": self.serial_number,
+                                "kind": self.kind}}
 
 
 @dataclasses.dataclass
@@ -64,6 +78,20 @@ class ConnectionUpdateEvent:
     connection_serial: int
     unknown0: int
     unknown1: int
+
+    def get_dump(self):
+        return {"ConnectionUpdateEvent":
+                               {"rx_packets": self.rx_packets,
+                                "rx_bytes": self.rx_bytes,
+                                "tx_bytes": self.tx_bytes,
+                                "rx_dups": self.rx_dups,
+                                "rx000": self.rx000,
+                                "tx_retx": self.tx_retx,
+                                "min_rtt": self.min_rtt,
+                                "avg_rtt": self.avg_rtt,
+                                "connection_serial": self.connection_serial,
+                                "unknown0": self.unknown0,
+                                "unknown1": self.unknown1}}
 
 
 class NetworkMonitor:
@@ -91,12 +119,15 @@ class NetworkMonitor:
 
             if message[0] == MESSAGE_TYPE_INTERFACE_DETECTION:
                 event = InterfaceDetectionEvent(*message[1])
+                event = event.get_dump()
             elif message[0] == MESSAGE_TYPE_CONNECTION_DETECTION:
                 event = ConnectionDetectionEvent(*message[1])
-                event.local_address = address_t.parse(event.local_address)
-                event.remote_address = address_t.parse(event.remote_address)
+                # event.local_address = address_t.parse(event.local_address)
+                # event.remote_address = address_t.parse(event.remote_address)
+                event = event.get_dump()
             elif message[0] == MESSAGE_TYPE_CONNECTION_UPDATE:
                 event = ConnectionUpdateEvent(*message[1])
+                event = event.get_dump()
             else:
                 self.logger.warning(f'unsupported event type: {message[0]}')
             yield event

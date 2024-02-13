@@ -1,7 +1,5 @@
 import logging
-import time
-from threading import Thread
-from perfomance import Performance, proclist, get_pid
+from perfomance import Performance, get_pid
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +7,5 @@ logger = logging.getLogger(__name__)
 if __name__ == "__main__":
     bundle = "com.apple.mobilesafari"
     perf = Performance()
-    sysmon_pid_daemon = Thread(target=perf.sysmon_process_monitor, name="sysmon", daemon=True)
-    sysmon_pid_daemon.start()
-    time.sleep(10)
+    perf.start_collecting([get_pid(bundle)])
     perf.create_json()
