@@ -108,7 +108,6 @@ class Performance:
                         if self.condition:
                             break
         self.energy_PID = self.create_json_data_process(self.energy_PID, pid_list)
-        self.energy_PID.pop(0)
 
     def start_collecting(self, pid_list: list):
         energy_pid_daemon = Thread(target=self.dvt_energy, name="energy", daemon=True, kwargs={"pid_list": pid_list})
@@ -154,12 +153,16 @@ class Performance:
         return json.loads(data)
 
     def create_json(self):
+        filtered_energy = list()
+        for item in self.energy_PID:
+            if type(item) is not set:
+                filtered_energy.append(item)
         print("Complete json")
         json_file = json.dumps({"system_performance":
                               {"graphics": self.graphics, "sysmon_monitor": self.sysmon_processes,
                                "netstat": self.netstat_whole},
                           "process_performance":
-                              {"energy_pid": self.energy_PID, "sysmon_monitor_pid": self.sysmon_processes_pid,
+                              {"energy_pid": filtered_energy, "sysmon_monitor_pid": self.sysmon_processes_pid,
                                "netstat_pid": self.netstat_pids}
                           })
         with open("complete_json.json", 'w') as f:
