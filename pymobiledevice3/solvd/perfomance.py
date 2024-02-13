@@ -112,18 +112,24 @@ class Performance:
 
     def start_collecting(self, pid_list: list):
         energy_pid_daemon = Thread(target=self.dvt_energy, name="energy", daemon=True, kwargs={"pid_list": pid_list})
+        energy_pid_daemon.start()
+        time.sleep(1.5)
+        graphics_daemon = Thread(target=self.monitor_graphics, name="graph", daemon=True)
+        graphics_daemon.start()
+        time.sleep(1.5)
         sys_pid_daemon = Thread(target=self.sysmon_process_monitor_pid, name="sysmon_pid", daemon=True,
                                 kwargs={"pid_list": pid_list})
-        sys_daemon = Thread(target=self.sysmon_process_monitor, name="sysmon", daemon=True)
-        net_pid_daemon = Thread(target=self.netstat_pid, name="net_pid", daemon=True, kwargs={"pid_list": pid_list})
-        net_daemon = Thread(target=self.netstat, name="net", daemon=True)
-        graphics_daemon = Thread(target=self.monitor_graphics, name="graph", daemon=True)
-        energy_pid_daemon.start()
         sys_pid_daemon.start()
+        time.sleep(1.5)
+        sys_daemon = Thread(target=self.sysmon_process_monitor, name="sysmon", daemon=True)
         sys_daemon.start()
+        time.sleep(1.5)
+        net_pid_daemon = Thread(target=self.netstat_pid, name="net_pid", daemon=True, kwargs={"pid_list": pid_list})
         net_pid_daemon.start()
+        time.sleep(1.5)
+        net_daemon = Thread(target=self.netstat, name="net", daemon=True)
         net_daemon.start()
-        graphics_daemon.start()
+        time.sleep(7)
 
     @staticmethod
     def create_json_data_system(data):
