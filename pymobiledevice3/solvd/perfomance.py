@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import time
 from threading import Thread
 
@@ -34,11 +35,10 @@ class Performance:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with Graphics(dvt) as graphics:
                     for stats in graphics:
-                        self.graphics.append(stats)
+                        self.graphics.append(self.create_json_data(stats))
                         logger.info(stats)
                         if self.condition:
                             break
-        self.graphics = self.create_json_data_system(self.graphics)
 
     def netstat(self):
         print("Netstat monitoring")
@@ -47,11 +47,10 @@ class Performance:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with NetworkMonitor(dvt) as monitor:
                     for event in monitor:
-                        self.netstat_whole.append(event)
+                        self.netstat_whole.append(self.create_json_data(event))
                         logger.info(event)
                         if self.condition:
                             break
-        self.netstat_whole = self.create_json_data_system(self.netstat_whole)
 
     def netstat_pid(self, pid_list: list):
         print("Netstat monitoring by pid")
@@ -60,11 +59,13 @@ class Performance:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with NetworkPID(dvt, pid_list) as monitor:
                     for event in monitor:
-                        self.netstat_pids.append(event)
+                        if type(event) is dict:
+                            data = str(dict(event).values())
+                            data = re.search("dict_values\(\[(.*)\]\)", data)
+                            self.netstat_pids.append(self.create_json_data(data.group(1)))
                         logger.info(event)
                         if self.condition:
                             break
-        self.netstat_pids = self.create_json_data_process(self.netstat_pids, pid_list)
 
     def sysmon_process_monitor(self):
         print("Sysmon monitoring")
@@ -75,11 +76,10 @@ class Performance:
                     for process_snapshot in sysmon.iter_processes():
                         time.sleep(1.5)
                         for process in process_snapshot:
-                            self.sysmon_processes.append(process)
+                            self.sysmon_processes.append(self.create_json_data(process))
                             print(process)
                         if self.condition:
                             break
-        self.sysmon_processes = self.create_json_data_system(self.sysmon_processes)
 
     def sysmon_process_monitor_pid(self, pid_list: list):
         print("Sysmon monitoring by pid")
@@ -90,11 +90,10 @@ class Performance:
                     for process_snapshot in sysmon.iter_processes():
                         for process in process_snapshot:
                             if process['pid'] in pid_list:
-                                self.sysmon_processes_pid.append(process)
+                                self.sysmon_processes_pid.append(self.create_json_data(process))
                                 logger.info(process)
                         if self.condition:
                             break
-        self.sysmon_processes_pid = self.create_json_data_system(self.sysmon_processes_pid)
 
     def dvt_energy(self, pid_list: list):
         print("Energy monitoring by pid")
@@ -103,11 +102,13 @@ class Performance:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with EnergyMonitor(dvt, pid_list) as energy_monitor:
                     for telemetry in energy_monitor:
-                        self.energy_PID.append(telemetry)
+                        if type(telemetry) is dict:
+                            data = str(dict(telemetry).values())
+                            data = re.search("dict_values\(\[(.*)\]\)", data)
+                            self.energy_PID.append(self.create_json_data(data.group(1)))
                         logger.info(telemetry)
                         if self.condition:
                             break
-        self.energy_PID = self.create_json_data_process(self.energy_PID, pid_list)
 
     def start_collecting(self, pid_list: list):
         energy_pid_daemon = Thread(target=self.dvt_energy, name="energy", daemon=True, kwargs={"pid_list": pid_list})
@@ -128,28 +129,16 @@ class Performance:
         time.sleep(1.5)
         net_daemon = Thread(target=self.netstat, name="net", daemon=True)
         net_daemon.start()
-        time.sleep(7)
+        time.sleep(5)
 
     @staticmethod
-    def create_json_data_system(data):
+    def create_json_data(data):
         data = str(data)
         data = data.replace("\n", "")
         data = data.replace("'", '"')
         data = data.replace("False", "false")
         data = data.replace("True", "true")
-        data = data.replace("None", "\"None\"")
-        return json.loads(data)
-
-    @staticmethod
-    def create_json_data_process(data, pid_list: list):
-        data = str(data)
-        data = data.replace("\n", "")
-        data = data.replace("'", '"')
-        for pid in pid_list:
-            data = data.replace(str(pid), str.format("\"%s\"", str(pid)))
-        data = data.replace("False", "false")
-        data = data.replace("True", "true")
-        data = data.replace("None", "\"None\"")
+        data = data.replace("None", "null")
         return json.loads(data)
 
     def create_json(self):
@@ -160,13 +149,14 @@ class Performance:
         print("Complete json")
         json_file = json.dumps({"system_performance":
                               {"graphics": self.graphics, "sysmon_monitor": self.sysmon_processes,
-                               "netstat": self.netstat_whole},
+                               "netstat": {"events": self.netstat_whole}},
                           "process_performance":
                               {"energy_pid": filtered_energy, "sysmon_monitor_pid": self.sysmon_processes_pid,
                                "netstat_pid": self.netstat_pids}
                           })
         with open("complete_json.json", 'w') as f:
             f.write(json_file)
+        return json_file
 
     def stop_monitor(self):
         print("Stop monitoring!")
