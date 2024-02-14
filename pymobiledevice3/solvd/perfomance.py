@@ -6,7 +6,6 @@ from threading import Thread
 
 from RSD import start_tunnel
 from pid_network import NetworkPID
-from pymobiledevice3.cli.cli_common import print_json
 from pymobiledevice3.remote.remote_service_discovery import RemoteServiceDiscoveryService
 from pymobiledevice3.services.dvt.dvt_secure_socket_proxy import DvtSecureSocketProxyService
 from pymobiledevice3.services.dvt.instruments.device_info import DeviceInfo
@@ -35,6 +34,7 @@ class Performance:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with Graphics(dvt) as graphics:
                     for stats in graphics:
+                        stats["time"] = time.time()
                         self.graphics.append(self.create_json_data(stats))
                         logger.info(stats)
                         if self.condition:
@@ -60,9 +60,8 @@ class Performance:
                 with NetworkPID(dvt, pid_list) as monitor:
                     for event in monitor:
                         if type(event) is dict:
-                            data = str(dict(event).values())
-                            data = re.search("dict_values\(\[(.*)\]\)", data)
-                            self.netstat_pids.append(self.create_json_data(data.group(1)))
+                            data = get_dict_text(event)
+                            self.netstat_pids.append(self.create_json_data(data))
                         logger.info(event)
                         if self.condition:
                             break
@@ -76,6 +75,7 @@ class Performance:
                     for process_snapshot in sysmon.iter_processes():
                         time.sleep(1.5)
                         for process in process_snapshot:
+                            process["time"] = time.time()
                             self.sysmon_processes.append(self.create_json_data(process))
                             print(process)
                         if self.condition:
@@ -90,6 +90,7 @@ class Performance:
                     for process_snapshot in sysmon.iter_processes():
                         for process in process_snapshot:
                             if process['pid'] in pid_list:
+                                process["time"] = time.time()
                                 self.sysmon_processes_pid.append(self.create_json_data(process))
                                 logger.info(process)
                         if self.condition:
@@ -103,9 +104,9 @@ class Performance:
                 with EnergyMonitor(dvt, pid_list) as energy_monitor:
                     for telemetry in energy_monitor:
                         if type(telemetry) is dict:
-                            data = str(dict(telemetry).values())
-                            data = re.search("dict_values\(\[(.*)\]\)", data)
-                            self.energy_PID.append(self.create_json_data(data.group(1)))
+                            telemetry[pid_list[0]]["time"] = time.time()
+                            data = get_dict_text(telemetry)
+                            self.energy_PID.append(self.create_json_data(data))
                         logger.info(telemetry)
                         if self.condition:
                             break
@@ -129,7 +130,8 @@ class Performance:
         time.sleep(1.5)
         net_daemon = Thread(target=self.netstat, name="net", daemon=True)
         net_daemon.start()
-        time.sleep(5)
+        while not self.condition:
+            time.sleep(1)
 
     @staticmethod
     def create_json_data(data):
@@ -180,5 +182,10 @@ def proclist():
             for process in processes:
                 if 'startDate' in process:
                     process['startDate'] = str(process['startDate'])
-            print_json(processes)
             return json.dumps(processes, sort_keys=True, indent=4)
+
+
+def get_dict_text(dict_text: dict):
+    data = str(dict(dict_text).values())
+    data = re.search("dict_values\(\[(.*)\]\)", data)
+    return data.group(1)
