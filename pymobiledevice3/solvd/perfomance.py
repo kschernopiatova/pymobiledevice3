@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import re
@@ -28,20 +29,20 @@ class Performance:
         self.sysmon_processes_pid = []
 
     def monitor_graphics(self):
-        print("Graphics monitoring")
+        logger.info("Graphics monitoring")
         host, port = start_tunnel()
         with RemoteServiceDiscoveryService((host, port)) as rsd:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with Graphics(dvt) as graphics:
                     for stats in graphics:
-                        stats["time"] = time.time()
+                        stats["time"] = datetime.datetime.now().timestamp()
                         self.graphics.append(self.create_json_data(stats))
                         logger.info(stats)
                         if self.condition:
                             break
 
     def netstat(self):
-        print("Netstat monitoring")
+        logger.info("Netstat monitoring")
         host, port = start_tunnel()
         with RemoteServiceDiscoveryService((host, port)) as rsd:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
@@ -60,6 +61,7 @@ class Performance:
                 with NetworkPID(dvt, pid_list) as monitor:
                     for event in monitor:
                         if type(event) is dict:
+                            event[pid_list[0]]["time"] = datetime.datetime.now().timestamp()
                             data = get_dict_text(event)
                             self.netstat_pids.append(self.create_json_data(data))
                         logger.info(event)
@@ -67,22 +69,22 @@ class Performance:
                             break
 
     def sysmon_process_monitor(self):
-        print("Sysmon monitoring")
+        logger.info("Sysmon monitoring")
         host, port = start_tunnel()
         with RemoteServiceDiscoveryService((host, port)) as rsd:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with Sysmontap(dvt) as sysmon:
                     for process_snapshot in sysmon.iter_processes():
-                        time.sleep(1.5)
+                        time.sleep(1)
                         for process in process_snapshot:
-                            process["time"] = time.time()
+                            process["time"] = datetime.datetime.now().timestamp()
                             self.sysmon_processes.append(self.create_json_data(process))
-                            print(process)
+                            logger.info(process)
                         if self.condition:
                             break
 
     def sysmon_process_monitor_pid(self, pid_list: list):
-        print("Sysmon monitoring by pid")
+        logger.info("Sysmon monitoring by pid")
         host, port = start_tunnel()
         with RemoteServiceDiscoveryService((host, port)) as rsd:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
@@ -90,21 +92,21 @@ class Performance:
                     for process_snapshot in sysmon.iter_processes():
                         for process in process_snapshot:
                             if process['pid'] in pid_list:
-                                process["time"] = time.time()
+                                process["time"] = datetime.datetime.now().timestamp()
                                 self.sysmon_processes_pid.append(self.create_json_data(process))
                                 logger.info(process)
                         if self.condition:
                             break
 
     def dvt_energy(self, pid_list: list):
-        print("Energy monitoring by pid")
+        logger.info("Energy monitoring by pid")
         host, port = start_tunnel()
         with RemoteServiceDiscoveryService((host, port)) as rsd:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with EnergyMonitor(dvt, pid_list) as energy_monitor:
                     for telemetry in energy_monitor:
                         if type(telemetry) is dict:
-                            telemetry[pid_list[0]]["time"] = time.time()
+                            telemetry[pid_list[0]]["time"] = datetime.datetime.now().timestamp()
                             data = get_dict_text(telemetry)
                             self.energy_PID.append(self.create_json_data(data))
                         logger.info(telemetry)
@@ -114,9 +116,6 @@ class Performance:
     def start_collecting(self, pid_list: list):
         energy_pid_daemon = Thread(target=self.dvt_energy, name="energy", daemon=True, kwargs={"pid_list": pid_list})
         energy_pid_daemon.start()
-        time.sleep(1.5)
-        graphics_daemon = Thread(target=self.monitor_graphics, name="graph", daemon=True)
-        graphics_daemon.start()
         time.sleep(1.5)
         sys_pid_daemon = Thread(target=self.sysmon_process_monitor_pid, name="sysmon_pid", daemon=True,
                                 kwargs={"pid_list": pid_list})
@@ -130,8 +129,9 @@ class Performance:
         time.sleep(1.5)
         net_daemon = Thread(target=self.netstat, name="net", daemon=True)
         net_daemon.start()
-        while not self.condition:
-            time.sleep(1)
+        time.sleep(1.5)
+        graphics_daemon = Thread(target=self.monitor_graphics, name="graph", daemon=True)
+        graphics_daemon.start()
 
     @staticmethod
     def create_json_data(data):
@@ -148,7 +148,7 @@ class Performance:
         for item in self.energy_PID:
             if type(item) is not set:
                 filtered_energy.append(item)
-        print("Complete json")
+        logger.info("Complete json")
         json_file = json.dumps({"system_performance":
                               {"graphics": self.graphics, "sysmon_monitor": self.sysmon_processes,
                                "netstat": {"events": self.netstat_whole}},
@@ -161,7 +161,7 @@ class Performance:
         return json_file
 
     def stop_monitor(self):
-        print("Stop monitoring!")
+        logger.info("Stop monitoring!")
         self.condition = True
 
 

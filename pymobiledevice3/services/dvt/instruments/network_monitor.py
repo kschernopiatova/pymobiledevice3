@@ -1,7 +1,7 @@
 import dataclasses
 import ipaddress
 import logging
-import time
+from datetime import datetime
 
 from construct import Adapter, Bytes, Int8ul, Int16ub, Int32ul, Struct, Switch, this
 
@@ -43,7 +43,7 @@ class InterfaceDetectionEvent:
         return {"InterfaceDetectionEvent":
                                {"interface_index": self.interface_index,
                                 "name": self.name,
-                                "time": time.time()}}
+                                "time": datetime.now().timestamp()}}
 
 
 @dataclasses.dataclass
@@ -65,7 +65,7 @@ class ConnectionDetectionEvent:
                                 "recv_buffer_used": self.recv_buffer_used,
                                 "serial_number": self.serial_number,
                                 "kind": self.kind,
-                                "time": time.time()}}
+                                "time": datetime.now().timestamp()}}
 
 
 @dataclasses.dataclass
@@ -95,7 +95,7 @@ class ConnectionUpdateEvent:
                                 "connection_serial": self.connection_serial,
                                 "unknown0": self.unknown0,
                                 "unknown1": self.unknown1,
-                                "time": time.time()}}
+                                "time": datetime.now().timestamp()}}
 
 
 class NetworkMonitor:

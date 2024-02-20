@@ -1,23 +1,27 @@
+import logging
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from perfomance import Performance, get_pid
 
 hostName = "localhost"
 serverPort = 8080
 
-perf = Performance()
+perf: Performance
+
+logger = logging.getLogger(__name__)
 
 
 class MyServer(BaseHTTPRequestHandler):
 
-    def do_GET(self):
+    def do_POST(self):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        bundle = "com.apple.mobilesafari"
+        bundle = self.headers.get("bundle")
         global perf
+        perf = Performance()
         perf.start_collecting([get_pid(bundle)])
 
-    def do_POST(self):
+    def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
@@ -25,13 +29,11 @@ class MyServer(BaseHTTPRequestHandler):
         perf.stop_monitor()
         json_output = perf.create_json()
         self.wfile.write(bytes(json_output, "utf-8"))
-        self.close_connection = True
-        self.finish()
 
 
 if __name__ == "__main__":
     webServer = HTTPServer((hostName, serverPort), MyServer)
-    print("Server started http://%s:%s" % (hostName, serverPort))
+    logger.info("Server started http://%s:%s" % (hostName, serverPort))
 
     try:
         webServer.serve_forever()
@@ -39,4 +41,4 @@ if __name__ == "__main__":
         pass
 
     webServer.server_close()
-    print("Server stopped.")
+    logger.info("Server stopped.")
