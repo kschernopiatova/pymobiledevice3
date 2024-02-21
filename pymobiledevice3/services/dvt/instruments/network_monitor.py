@@ -1,6 +1,7 @@
 import dataclasses
 import ipaddress
 import logging
+from datetime import datetime
 
 from construct import Adapter, Bytes, Int8ul, Int16ub, Int32ul, Struct, Switch, this
 
@@ -41,7 +42,8 @@ class InterfaceDetectionEvent:
     def get_dump(self):
         return {"InterfaceDetectionEvent":
                                {"interface_index": self.interface_index,
-                                "name": self.name}}
+                                "name": self.name,
+                                "time": datetime.now().timestamp()}}
 
 
 @dataclasses.dataclass
@@ -62,7 +64,8 @@ class ConnectionDetectionEvent:
                                 "recv_buffer_size": self.recv_buffer_size,
                                 "recv_buffer_used": self.recv_buffer_used,
                                 "serial_number": self.serial_number,
-                                "kind": self.kind}}
+                                "kind": self.kind,
+                                "time": datetime.now().timestamp()}}
 
 
 @dataclasses.dataclass
@@ -91,7 +94,8 @@ class ConnectionUpdateEvent:
                                 "avg_rtt": self.avg_rtt,
                                 "connection_serial": self.connection_serial,
                                 "unknown0": self.unknown0,
-                                "unknown1": self.unknown1}}
+                                "unknown1": self.unknown1,
+                                "time": datetime.now().timestamp()}}
 
 
 class NetworkMonitor:
