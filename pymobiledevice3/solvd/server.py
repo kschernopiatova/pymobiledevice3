@@ -1,6 +1,6 @@
 import logging
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from perfomance import Performance
+from performance import Performance
 
 hostName = "localhost"
 serverPort = 8080
@@ -14,6 +14,7 @@ class MyServer(BaseHTTPRequestHandler):
 
     def do_POST(self):
         self.send_response(200)
+        self.end_headers()
         bundle = self.headers.get("bundle")
         global perf
         perf = Performance()
@@ -22,6 +23,7 @@ class MyServer(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "application/json")
+        self.end_headers()
         global perf
         perf.stop_monitor()
         json_output = perf.create_json()
