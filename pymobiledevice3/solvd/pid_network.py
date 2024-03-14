@@ -19,6 +19,5 @@ class NetworkPID:
 
     def __iter__(self):
         while True:
-            time.sleep(1)
             self._channel.sampleAttributes_forPIDs_(MessageAux().append_obj({}).append_obj(self._pid_list))
             yield self._channel.receive_plist()

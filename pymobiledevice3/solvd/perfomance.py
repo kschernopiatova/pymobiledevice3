@@ -35,7 +35,7 @@ class Performance:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with Graphics(dvt) as graphics:
                     for stats in graphics:
-                        stats["time"] = timestamp()
+                        stats["json_time"] = timestamp()
                         self.graphics.append(self.create_json_data(stats))
                         logger.info(stats)
                         if self.condition:
@@ -73,7 +73,7 @@ class Performance:
                     for process_snapshot in sysmon.iter_processes():
                         time.sleep(1)
                         for process in process_snapshot:
-                            process["time"] = timestamp()
+                            process["json_time"] = timestamp()
                             self.sysmon_processes.append(self.create_json_data(process))
                             logger.info(process)
                         if self.condition:
@@ -87,7 +87,7 @@ class Performance:
                     for process_snapshot in sysmon.iter_processes():
                         for process in process_snapshot:
                             if process['pid'] in pid_list:
-                                process["time"] = timestamp()
+                                process["json_time"] = timestamp()
                                 self.sysmon_processes_pid.append(self.create_json_data(process))
                                 logger.info(process)
                         if self.condition:
@@ -100,7 +100,7 @@ class Performance:
                 with EnergyMonitor(dvt, pid_list) as energy_monitor:
                     for telemetry in energy_monitor:
                         if type(telemetry) is dict:
-                            telemetry[pid_list[0]]["time"] = timestamp()
+                            telemetry[pid_list[0]]["json_time"] = timestamp()
                             data = get_dict_text(telemetry)
                             self.energy_pid.append(self.create_json_data(data))
                         logger.info(telemetry)
