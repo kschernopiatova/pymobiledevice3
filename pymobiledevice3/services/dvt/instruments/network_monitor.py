@@ -43,7 +43,7 @@ class InterfaceDetectionEvent:
         return {"InterfaceDetectionEvent":
                                {"interface_index": self.interface_index,
                                 "name": self.name,
-                                "time": datetime.now().timestamp()}}
+                                "json_time": datetime.now().timestamp()}}
 
 
 @dataclasses.dataclass
@@ -65,7 +65,7 @@ class ConnectionDetectionEvent:
                                 "recv_buffer_used": self.recv_buffer_used,
                                 "serial_number": self.serial_number,
                                 "kind": self.kind,
-                                "time": datetime.now().timestamp()}}
+                                "json_time": datetime.now().timestamp()}}
 
 
 @dataclasses.dataclass
@@ -95,7 +95,7 @@ class ConnectionUpdateEvent:
                                 "connection_serial": self.connection_serial,
                                 "unknown0": self.unknown0,
                                 "unknown1": self.unknown1,
-                                "time": datetime.now().timestamp()}}
+                                "json_time": datetime.now().timestamp()}}
 
 
 class NetworkMonitor:
