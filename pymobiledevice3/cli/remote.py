@@ -22,6 +22,17 @@ from pymobiledevice3.tunneld import TUNNELD_DEFAULT_ADDRESS, TunneldRunner
 
 logger = logging.getLogger(__name__)
 
+host_address = ""
+port_address = ""
+
+
+def get_host():
+    return host_address
+
+
+def get_port():
+    return port_address
+
 
 async def browse_rsd(timeout: float = DEFAULT_BONJOUR_TIMEOUT) -> List[Mapping]:
     install_driver_if_required()
@@ -115,6 +126,10 @@ async def tunnel_task(
         max_idle_timeout: float = MAX_IDLE_TIMEOUT, protocol: TunnelProtocol = TunnelProtocol.QUIC) -> None:
     async with start_tunnel(
             service, secrets=secrets, max_idle_timeout=max_idle_timeout, protocol=protocol) as tunnel_result:
+        global host_address
+        global port_address
+        host_address = tunnel_result.address
+        port_address = str(tunnel_result.port)
         logger.info('tunnel created')
         if script_mode:
             print(f'{tunnel_result.address} {tunnel_result.port}')
