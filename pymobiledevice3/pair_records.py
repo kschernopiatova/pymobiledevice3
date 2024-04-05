@@ -6,12 +6,13 @@ import sys
 import uuid
 from contextlib import suppress
 from pathlib import Path
-from typing import Mapping, Optional
+from typing import Generator, Mapping, Optional
 
 from pymobiledevice3 import usbmux
 from pymobiledevice3.common import get_home_folder
 from pymobiledevice3.exceptions import MuxException, NotPairedError
 from pymobiledevice3.usbmux import PlistMuxConnection
+from pymobiledevice3.utils import chown_to_non_sudo_if_needed
 
 PAIR_RECORDS_PATH = {
     'win32': Path(os.environ.get('ALLUSERSPROFILE', ''), 'Apple', 'Lockdown'),
@@ -81,8 +82,18 @@ def create_pairing_records_cache_folder(pairing_records_cache_folder: Path = Non
         pairing_records_cache_folder = get_home_folder()
     else:
         pairing_records_cache_folder.mkdir(parents=True, exist_ok=True)
+    chown_to_non_sudo_if_needed(pairing_records_cache_folder)
     return pairing_records_cache_folder
 
 
 def get_remote_pairing_record_filename(identifier: str) -> str:
     return f'remote_{identifier}'
+
+
+def iter_remote_pair_records() -> Generator[Path, None, None]:
+    return get_home_folder().glob('remote_*')
+
+
+def iter_remote_paired_identifiers() -> Generator[str, None, None]:
+    for file in iter_remote_pair_records():
+        yield file.parts[-1].split('remote_', 1)[1].split('.', 1)[0]
