@@ -71,7 +71,7 @@ class Performance:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with Sysmontap(dvt) as sysmon:
                     for process_snapshot in sysmon.iter_processes():
-                        time.sleep(1)
+                        time.sleep(2)
                         for process in process_snapshot:
                             process["json_time"] = timestamp()
                             self.sysmon_processes.append(self.create_json_data(process))
