@@ -100,8 +100,10 @@ class Performance:
                 with EnergyMonitor(dvt, pid_list) as energy_monitor:
                     for telemetry in energy_monitor:
                         if type(telemetry) is dict:
-                            telemetry[pid_list[0]]["json_time"] = timestamp()
                             data = get_dict_text(telemetry)
+                            data = data.replace("'", "\"")
+                            data = dict(json.loads(data))
+                            data["json_time"] = timestamp()
                             self.energy_pid.append(self.create_json_data(data))
                         logger.info(telemetry)
                         if self.condition:
