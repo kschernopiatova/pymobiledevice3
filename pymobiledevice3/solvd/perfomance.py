@@ -1,7 +1,6 @@
 import datetime
 import json
 import logging
-import re
 import time
 from threading import Thread
 
@@ -14,6 +13,7 @@ from pymobiledevice3.services.dvt.instruments.energy_monitor import EnergyMonito
 from pymobiledevice3.services.dvt.instruments.graphics import Graphics
 from pymobiledevice3.services.dvt.instruments.network_monitor import NetworkMonitor
 from pymobiledevice3.services.dvt.instruments.sysmontap import Sysmontap
+from pymobiledevice3.solvd.data_util import create_json_data, get_dict_text
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class Performance:
                 with Graphics(dvt) as graphics:
                     for stats in graphics:
                         stats["json_time"] = timestamp()
-                        self.graphics.append(self.create_json_data(stats))
+                        self.graphics.append(create_json_data(stats))
                         logger.info(stats)
                         if self.condition:
                             break
@@ -47,7 +47,7 @@ class Performance:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with NetworkMonitor(dvt) as monitor:
                     for event in monitor:
-                        self.netstat_system.append(self.create_json_data(event))
+                        self.netstat_system.append(create_json_data(event))
                         logger.info(event)
                         if self.condition:
                             break
@@ -60,7 +60,7 @@ class Performance:
                     for event in monitor:
                         if type(event) is dict:
                             data = get_dict_text(event)
-                            self.netstat_pids.append(self.create_json_data(data))
+                            self.netstat_pids.append(create_json_data(data))
                         logger.info(event)
                         if self.condition:
                             break
@@ -74,7 +74,7 @@ class Performance:
                         time.sleep(2)
                         for process in process_snapshot:
                             process["json_time"] = timestamp()
-                            self.sysmon_processes.append(self.create_json_data(process))
+                            self.sysmon_processes.append(create_json_data(process))
                             logger.info(process)
                         if self.condition:
                             break
@@ -88,7 +88,7 @@ class Performance:
                         for process in process_snapshot:
                             if process['pid'] in pid_list:
                                 process["json_time"] = timestamp()
-                                self.sysmon_processes_pid.append(self.create_json_data(process))
+                                self.sysmon_processes_pid.append(create_json_data(process))
                                 logger.info(process)
                         if self.condition:
                             break
@@ -104,7 +104,7 @@ class Performance:
                             data = data.replace("'", "\"")
                             data = dict(json.loads(data))
                             data["json_time"] = timestamp()
-                            self.energy_pid.append(self.create_json_data(data))
+                            self.energy_pid.append(create_json_data(data))
                         logger.info(telemetry)
                         if self.condition:
                             break
@@ -146,16 +146,6 @@ class Performance:
                         process['startDate'] = str(process['startDate'])
                 return json.dumps(processes, sort_keys=True, indent=4)
 
-    @staticmethod
-    def create_json_data(data):
-        data = str(data)
-        data = data.replace("\n", "")
-        data = data.replace("'", '"')
-        data = data.replace("False", "false")
-        data = data.replace("True", "true")
-        data = data.replace("None", "null")
-        return json.loads(data)
-
     def create_json(self):
         filtered_energy = list()
         for item in self.energy_pid:
@@ -163,12 +153,12 @@ class Performance:
                 filtered_energy.append(item)
         logger.info("Complete json")
         json_file = json.dumps({"system_performance":
-                              {"graphics": self.graphics, "sysmon_monitor": self.sysmon_processes,
-                               "netstat": {"events": self.netstat_system}},
-                          "process_performance":
-                              {"energy_pid": filtered_energy, "sysmon_monitor_pid": self.sysmon_processes_pid,
-                               "netstat_pid": self.netstat_pids}
-                          })
+                                {"graphics": self.graphics, "sysmon_monitor": self.sysmon_processes,
+                                 "netstat": {"events": self.netstat_system}},
+                                "process_performance":
+                                    {"energy_pid": filtered_energy, "sysmon_monitor_pid": self.sysmon_processes_pid,
+                                     "netstat_pid": self.netstat_pids}
+                                })
         with open("complete_json.json", 'w') as f:
             f.write(json_file)
         return json_file
@@ -176,12 +166,6 @@ class Performance:
     def stop_monitor(self):
         logger.info("Stop monitoring!")
         self.condition = True
-
-
-def get_dict_text(dict_text: dict):
-    data = str(dict(dict_text).values())
-    data = re.search("dict_values\(\[(.*)\]\)", data)
-    return data.group(1)
 
 
 def timestamp():
