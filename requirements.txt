@@ -42,3 +42,7 @@ pywintunx-pmd3>=1.0.2 ; platform_system == "Windows"
 aiofiles
 prompt_toolkit
 sslpsk-pmd3>=1.0.3
+influxdb3-python
+pandas
+polars
+jproperties

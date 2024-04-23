@@ -1,9 +1,14 @@
 import logging
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from perfomance import Performance
 
-hostName = "localhost"
-serverPort = 8080
+if len(sys.argv) >= 2:
+    hostName = sys.argv[1]
+    serverPort = int(sys.argv[2])
+else:
+    hostName = "localhost"
+    serverPort = 8080
 
 perf: Performance
 
