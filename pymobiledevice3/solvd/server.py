@@ -20,10 +20,14 @@ class MyServer(BaseHTTPRequestHandler):
     def do_POST(self):
         self.send_response(200)
         bundle = self.headers.get("bundle")
+        name = self.headers.get("name")
         self.end_headers()
         global perf
         perf = Performance()
-        perf.start_collecting([perf.get_pid(bundle)])
+        pid = perf.get_pid(bundle)
+        if pid is None:
+            pid = perf.get_pid_name(name)
+        perf.start_collecting([pid])
 
     def do_GET(self):
         self.send_response(200)

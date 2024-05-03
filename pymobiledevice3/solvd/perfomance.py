@@ -37,7 +37,7 @@ class Performance:
                     for stats in graphics:
                         stats["json_time"] = timestamp()
                         self.graphics.append(create_json_data(stats))
-                        logger.info(stats)
+                        #logger.info(stats)
                         if self.condition:
                             break
 
@@ -48,20 +48,24 @@ class Performance:
                 with NetworkMonitor(dvt) as monitor:
                     for event in monitor:
                         self.netstat_system.append(create_json_data(event))
-                        logger.info(event)
+                        #logger.info(event)
                         if self.condition:
                             break
 
     def netstat_pid(self, pid_list: list):
-        print("Netstat monitoring by pid")
+        logger.info("Netstat monitoring by pid")
         with RemoteServiceDiscoveryService((self.host, self.port)) as rsd:
             with DvtSecureSocketProxyService(lockdown=rsd) as dvt:
                 with NetworkPID(dvt, pid_list) as monitor:
                     for event in monitor:
                         if type(event) is dict:
                             data = get_dict_text(event)
+                            data = data.replace("'", "\"")
+                            data = dict(json.loads(data))
+                            data["json_time"] = timestamp()
+                            del data["time"]
                             self.netstat_pids.append(create_json_data(data))
-                        logger.info(event)
+                        #logger.info(event)
                         if self.condition:
                             break
 
@@ -75,7 +79,7 @@ class Performance:
                         for process in process_snapshot:
                             process["json_time"] = timestamp()
                             self.sysmon_processes.append(create_json_data(process))
-                            logger.info(process)
+                            #logger.info(process)
                         if self.condition:
                             break
 
@@ -89,7 +93,7 @@ class Performance:
                             if process['pid'] in pid_list:
                                 process["json_time"] = timestamp()
                                 self.sysmon_processes_pid.append(create_json_data(process))
-                                logger.info(process)
+                                #logger.info(process)
                         if self.condition:
                             break
 
@@ -105,7 +109,7 @@ class Performance:
                             data = dict(json.loads(data))
                             data["json_time"] = timestamp()
                             self.energy_pid.append(create_json_data(data))
-                        logger.info(telemetry)
+                        #logger.info(telemetry)
                         if self.condition:
                             break
 
@@ -135,6 +139,14 @@ class Performance:
         for item in json_data:
             if "bundleIdentifier" in item:
                 if item["bundleIdentifier"] == bundle_id:
+                    return item["pid"]
+
+    def get_pid_name(self, name: str):
+        str_data = self.proclist()
+        json_data = json.loads(str_data)
+        for item in json_data:
+            if "name" in item:
+                if item["name"] == name:
                     return item["pid"]
 
     def proclist(self):
